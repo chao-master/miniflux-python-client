@@ -1163,4 +1163,6 @@ class TestMinifluxClient(unittest.TestCase):
 
 def _get_request_mock():
     patcher = mock.patch("miniflux.requests")
-    return patcher.start()
+    session = mock.Mock()
+    patcher.start().Session.return_value = session
+    return session
