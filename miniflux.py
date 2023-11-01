@@ -53,6 +53,7 @@ class Client:
         timeout: float = 30.0,
         api_key: str = None,
         user_agent: str = DEFAULT_USER_AGENT,
+        session: requests.Session = None
     ):
         self._base_url = base_url
         self._api_key = api_key
@@ -63,6 +64,10 @@ class Client:
         self._headers = {"User-Agent": user_agent}
         if api_key:
             self._headers["X-Auth-Token"] = api_key
+        if session:
+            self._session = session
+        else:
+            self._session = requests.Session()
 
     def _get_endpoint(self, path: str) -> str:
         if len(self._base_url) > 0 and self._base_url[-1:] == "/":
@@ -79,14 +84,14 @@ class Client:
 
     def flush_history(self) -> bool:
         endpoint = self._get_endpoint("/flush-history")
-        response = requests.delete(
+        response = self._session.delete(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         return response.status_code == 202
 
     def get_version(self) -> Dict:
         endpoint = self._get_endpoint("/version")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -95,7 +100,7 @@ class Client:
 
     def me(self) -> Dict:
         endpoint = self._get_endpoint("/me")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -107,7 +112,7 @@ class Client:
 
     def export_feeds(self) -> str:
         endpoint = self._get_endpoint("/export")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -116,7 +121,7 @@ class Client:
 
     def import_feeds(self, opml: str) -> Dict:
         endpoint = self._get_endpoint("/import")
-        response = requests.post(
+        response = self._session.post(
             endpoint,
             headers=self._headers,
             data=opml,
@@ -132,7 +137,7 @@ class Client:
         data = dict(url=website_url)
         data.update(kwargs)
 
-        response = requests.post(
+        response = self._session.post(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -145,7 +150,7 @@ class Client:
 
     def get_category_feeds(self, category_id: int) -> List[Dict]:
         endpoint = self._get_endpoint(f"/categories/{category_id}/feeds")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -154,7 +159,7 @@ class Client:
 
     def get_feeds(self) -> List[Dict]:
         endpoint = self._get_endpoint("/feeds")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -163,7 +168,7 @@ class Client:
 
     def get_feed(self, feed_id: int) -> Dict:
         endpoint = self._get_endpoint(f"/feeds/{feed_id}")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -172,7 +177,7 @@ class Client:
 
     def get_feed_icon(self, feed_id: int) -> Dict:
         endpoint = self._get_endpoint(f"/feeds/{feed_id}/icon")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -181,7 +186,7 @@ class Client:
 
     def get_icon(self, icon_id: int) -> Dict:
         endpoint = self._get_endpoint(f"/icons/{icon_id}")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -196,7 +201,7 @@ class Client:
         data = dict(feed_url=feed_url, category_id=category_id)
         data.update(kwargs)
 
-        response = requests.post(
+        response = self._session.post(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -210,7 +215,7 @@ class Client:
     def update_feed(self, feed_id: int, **kwargs) -> Dict:
         endpoint = self._get_endpoint(f"/feeds/{feed_id}")
         data = self._get_modification_params(**kwargs)
-        response = requests.put(
+        response = self._session.put(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -223,7 +228,7 @@ class Client:
 
     def refresh_all_feeds(self) -> bool:
         endpoint = self._get_endpoint("/feeds/refresh")
-        response = requests.put(
+        response = self._session.put(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code >= 400:
@@ -232,7 +237,7 @@ class Client:
 
     def refresh_feed(self, feed_id: int) -> bool:
         endpoint = self._get_endpoint(f"/feeds/{feed_id}/refresh")
-        response = requests.put(
+        response = self._session.put(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code >= 400:
@@ -241,7 +246,7 @@ class Client:
 
     def refresh_category(self, category_id: int) -> bool:
         endpoint = self._get_endpoint(f"/categories/{category_id}/refresh")
-        response = requests.put(
+        response = self._session.put(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code >= 400:
@@ -250,7 +255,7 @@ class Client:
 
     def delete_feed(self, feed_id: int) -> None:
         endpoint = self._get_endpoint(f"/feeds/{feed_id}")
-        response = requests.delete(
+        response = self._session.delete(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code != 204:
@@ -258,7 +263,7 @@ class Client:
 
     def get_feed_entry(self, feed_id: int, entry_id: int) -> Dict:
         endpoint = self._get_endpoint(f"/feeds/{feed_id}/entries/{entry_id}")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -268,7 +273,7 @@ class Client:
     def get_feed_entries(self, feed_id: int, **kwargs) -> Dict:
         endpoint = self._get_endpoint(f"/feeds/{feed_id}/entries")
         params = self._get_params(**kwargs)
-        response = requests.get(
+        response = self._session.get(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -281,7 +286,7 @@ class Client:
 
     def mark_feed_entries_as_read(self, feed_id: int) -> None:
         endpoint = self._get_endpoint(f"/feeds/{feed_id}/mark-all-as-read")
-        response = requests.put(
+        response = self._session.put(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code != 204:
@@ -289,7 +294,7 @@ class Client:
 
     def get_entry(self, entry_id: int) -> Dict:
         endpoint = self._get_endpoint(f"/entries/{entry_id}")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -299,7 +304,7 @@ class Client:
     def get_entries(self, **kwargs) -> Dict:
         endpoint = self._get_endpoint("/entries")
         params = self._get_params(**kwargs)
-        response = requests.get(
+        response = self._session.get(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -316,7 +321,7 @@ class Client:
             "title": title,
             "content": content,
         })
-        response = requests.put(
+        response = self._session.put(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -330,7 +335,7 @@ class Client:
     def update_entries(self, entry_ids: List[int], status: str) -> bool:
         endpoint = self._get_endpoint("/entries")
         data = {"entry_ids": entry_ids, "status": status}
-        response = requests.put(
+        response = self._session.put(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -343,7 +348,7 @@ class Client:
 
     def fetch_entry_content(self, entry_id: int) -> Dict:
         endpoint = self._get_endpoint(f"/entries/{entry_id}/fetch-content")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -352,7 +357,7 @@ class Client:
 
     def toggle_bookmark(self, entry_id: int) -> bool:
         endpoint = self._get_endpoint(f"/entries/{entry_id}/bookmark")
-        response = requests.put(
+        response = self._session.put(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code >= 400:
@@ -361,7 +366,7 @@ class Client:
 
     def save_entry(self, entry_id: int) -> bool:
         endpoint = self._get_endpoint(f"/entries/{entry_id}/save")
-        response = requests.post(
+        response = self._session.post(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code != 202:
@@ -370,7 +375,7 @@ class Client:
 
     def get_categories(self) -> List[Dict]:
         endpoint = self._get_endpoint("/categories")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -379,7 +384,7 @@ class Client:
 
     def get_category_entry(self, category_id: int, entry_id: int) -> Dict:
         endpoint = self._get_endpoint(f"/categories/{category_id}/entries/{entry_id}")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -389,7 +394,7 @@ class Client:
     def get_category_entries(self, category_id: int, **kwargs) -> Dict:
         endpoint = self._get_endpoint(f"/categories/{category_id}/entries")
         params = self._get_params(**kwargs)
-        response = requests.get(
+        response = self._session.get(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -403,7 +408,7 @@ class Client:
     def create_category(self, title: str) -> Dict:
         endpoint = self._get_endpoint("/categories")
         data = {"title": title}
-        response = requests.post(
+        response = self._session.post(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -417,7 +422,7 @@ class Client:
     def update_category(self, category_id: int, title: str) -> Dict:
         endpoint = self._get_endpoint(f"/categories/{category_id}")
         data = {"id": category_id, "title": title}
-        response = requests.put(
+        response = self._session.put(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -430,7 +435,7 @@ class Client:
 
     def delete_category(self, category_id: int) -> None:
         endpoint = self._get_endpoint(f"/categories/{category_id}")
-        response = requests.delete(
+        response = self._session.delete(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code != 204:
@@ -438,7 +443,7 @@ class Client:
 
     def mark_category_entries_as_read(self, category_id: int) -> None:
         endpoint = self._get_endpoint(f"/categories/{category_id}/mark-all-as-read")
-        response = requests.put(
+        response = self._session.put(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code != 204:
@@ -446,7 +451,7 @@ class Client:
 
     def get_users(self) -> List[Dict]:
         endpoint = self._get_endpoint("/users")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -461,7 +466,7 @@ class Client:
 
     def _get_user(self, user_id_or_username: Union[str, int]) -> Dict:
         endpoint = self._get_endpoint(f"/users/{user_id_or_username}")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
@@ -471,7 +476,7 @@ class Client:
     def create_user(self, username: str, password: str, is_admin: bool = False) -> Dict:
         endpoint = self._get_endpoint("/users")
         data = {"username": username, "password": password, "is_admin": is_admin}
-        response = requests.post(
+        response = self._session.post(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -485,7 +490,7 @@ class Client:
     def update_user(self, user_id: int, **kwargs) -> Dict:
         endpoint = self._get_endpoint(f"/users/{user_id}")
         data = self._get_modification_params(**kwargs)
-        response = requests.put(
+        response = self._session.put(
             endpoint,
             headers=self._headers,
             auth=self._auth,
@@ -498,7 +503,7 @@ class Client:
 
     def delete_user(self, user_id: int) -> None:
         endpoint = self._get_endpoint(f"/users/{user_id}")
-        response = requests.delete(
+        response = self._session.delete(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code != 204:
@@ -506,7 +511,7 @@ class Client:
 
     def mark_user_entries_as_read(self, user_id: int) -> None:
         endpoint = self._get_endpoint(f"/users/{user_id}/mark-all-as-read")
-        response = requests.put(
+        response = self._session.put(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code != 204:
@@ -514,7 +519,7 @@ class Client:
 
     def get_feed_counters(self):
         endpoint = self._get_endpoint("/feeds/counters")
-        response = requests.get(
+        response = self._session.get(
             endpoint, headers=self._headers, auth=self._auth, timeout=self._timeout
         )
         if response.status_code == 200:
